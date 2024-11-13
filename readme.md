@@ -1,74 +1,108 @@
-mastersub
-mastersub is a Python script for discovering tenant domains and subdomains, leveraging SecurityTrails API and httpx. It automates the process of retrieving subdomains, checking for live hosts, and compiling the results.
 
-Features
-Retrieves tenant domains using Microsoft's Autodiscover service.
-Fetches subdomains from SecurityTrails API.
-Checks for live subdomains using httpx.
-Outputs results in organized files:
-All discovered subdomains.
-Live subdomains identified by httpx.
-Provides a summary table of subdomains found and live subdomains.
-Installation
-Prerequisites
-Python 3.6+
-SecurityTrails API Key: Obtain from your SecurityTrails account.
-httpx: Install httpx from ProjectDiscovery.
-Clone the Repository
-bash
-Copy code
+# MasterSub
+
+MasterSub is a Python script for tenant domain and subdomain discovery. It retrieves tenant domains associated with a given domain, fetches subdomains using the SecurityTrails API, and identifies live subdomains using [`httpx`](https://github.com/projectdiscovery/httpx).
+
+## Features
+
+- **Tenant Domain Retrieval**: Discovers tenant domains via Microsoft's Autodiscover service.
+- **Subdomain Enumeration**: Fetches subdomains for selected domains using the SecurityTrails API.
+- **Live Subdomain Detection**: Identifies live subdomains by probing with `httpx`.
+- **Output Files**: Saves all subdomains and live subdomains to separate files.
+- **Summary Table**: Provides a summary table of subdomains found and live subdomains.
+
+## Installation
+
+### Prerequisites
+
+- **Python 3.6** or higher
+- **[`httpx`](https://github.com/projectdiscovery/httpx)** from ProjectDiscovery
+- **SecurityTrails API Key**
+- **Go Programming Language** (required to install `httpx`)
+
+### Clone the Repository
+
+```bash
 git clone https://github.com/yourusername/mastersub.git
 cd mastersub
-Install Python Dependencies
+```
+
+### Install Python Dependencies
+
 It's recommended to use a virtual environment:
 
-bash
-Copy code
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
 Install the required Python packages:
 
-bash
-Copy code
+```bash
 pip install -r requirements.txt
-Install httpx
-Ensure you have Go installed and set up in your environment.
+```
 
-Install httpx using go:
+### Install `httpx`
 
-bash
-Copy code
-go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
-Ensure that the httpx binary is in your system's PATH. You can typically find the installed binary in $HOME/go/bin or %USERPROFILE%\go\bin.
+Install `httpx` from ProjectDiscovery:
 
-Add the following to your .bashrc, .zshrc, or equivalent:
+```bash
+GO111MODULE=on go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
+```
 
-bash
-Copy code
-export PATH=$PATH:$HOME/go/bin
-Verify the installation:
+Ensure that the Go binary path is added to your `PATH` environment variable. You can add the following line to your `~/.bashrc` or `~/.bash_profile`:
 
-bash
-Copy code
+```bash
+export PATH=$PATH:$(go env GOPATH)/bin
+```
+
+Verify the installation by running:
+
+```bash
 httpx -version
-You should see the version information of httpx.
+```
 
-Usage
+### Obtain a SecurityTrails API Key
+
+1. Sign up for a [SecurityTrails](https://securitytrails.com/) account if you don't have one.
+2. Navigate to your account settings to obtain your API key.
+
+## Usage
+
 Run the script with one or more domains and your SecurityTrails API key:
 
-bash
-Copy code
-python discover_subdomains.py example.com --apikey YOUR_SECURITYTRAILS_API_KEY
-Options
---apikey: (Required) Your SecurityTrails API Key.
-domains: One or more domains to query.
-Example
-bash
-Copy code
-python discover_subdomains.py example.com --apikey YOUR_SECURITYTRAILS_API_KEY
-Sample Output
-vbnet
-Copy code
+```bash
+python discover_subdomains.py example.com --apikey YOUR_API_KEY
+```
+
+### Options
+
+- `--apikey`: Your SecurityTrails API key (required).
+- `domains`: One or more domains to query.
+
+### Example
+
+```bash
+python discover_subdomains.py example.com --apikey YOUR_API_KEY
+```
+
+### Workflow
+
+1. **Tenant Domain Retrieval**: The script retrieves tenant domains associated with the provided domain(s).
+2. **Domain Selection**: You will be prompted to select which domains to proceed with. Domains ending with `.onmicrosoft.com` are deselected by default.
+3. **Base Filename**: You will be prompted to enter a base name for the output files. A default is provided based on the first selected domain.
+4. **Subdomain Retrieval**: The script fetches subdomains for the selected domains using the SecurityTrails API.
+5. **Subdomain Probing**: It runs `httpx` to identify live subdomains.
+6. **Results**:
+   - All subdomains are saved to `<base_filename>-all.txt`.
+   - Live subdomains are saved to `<base_filename>-alive.txt`.
+   - A summary table is displayed.
+
+## Sample Output
+
+```plaintext
+$ python discover_subdomains.py example.com --apikey YOUR_API_KEY
+
 Retrieving tenant domains for example.com...
 
 Domains found for example.com:
@@ -84,7 +118,7 @@ Selected Domains:
 example.com
 
 Enter a base name for output files (default: 'example')
->
+>  (Pressed Enter)
 
 Retrieving subdomains from SecurityTrails...
 Processing domain: example.com
@@ -105,20 +139,26 @@ Live subdomains saved to example-alive.txt
 Subdomain Counts:
 Domain                          Subdomains Found   Live Subdomains
 ------------------------------------------------------------------
-example.com                                   75                15
+example.com                                  75                15
 ------------------------------------------------------------------
-Total Subdomains                              75                15
-Output Files
-<base_name>-all.txt: Contains all subdomains discovered via SecurityTrails.
-<base_name>-alive.txt: Contains live subdomains identified by httpx.
-<base_name>-httpx.txt: Contains the detailed output from httpx.
-Notes
-Deselected .onmicrosoft.com Domains: During the domain selection step, domains ending with .onmicrosoft.com are deselected by default.
-Excluding 404 Responses: The script uses httpx with the -fc 404 option to filter out responses with a 404 status code, focusing on potentially active subdomains.
-Customizing httpx Parameters: If you wish to adjust httpx parameters, you can modify the run_httpx function in the script.
-Troubleshooting
-httpx Command Not Found: Ensure that httpx is installed and the binary is in your system's PATH.
-Permissions: Ensure you have the necessary permissions to read and write files in the directory.
-Python Version: The script requires Python 3.6 or higher.
-Contributing
-Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
+Total Subdomains                             75                15
+```
+
+## Notes
+
+- **Dependencies**: The script relies on the `requests` and `questionary` Python packages.
+- **HTTPX Options**: The script uses `httpx` with options to filter out 404 responses.
+- **Performance**: Depending on the number of subdomains, the script may take some time to complete.
+- **Legal**: Ensure you have proper authorization to perform scanning on the target domains.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
+
+## Disclaimer
+
+Use this tool responsibly and ensure you have permission to perform scanning on the target domains. Unauthorized scanning may be illegal in your jurisdiction.
