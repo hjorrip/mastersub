@@ -57,7 +57,7 @@ MasterSub is a Python-based tool designed to fetch subdomains from SecurityTrail
 
 1. Run the script:
    ```bash
-   python mastersub.py -k <API_KEY>
+   python mastersub.py --apikey <API_KEY> example.com
    ```
 
 2. Enter the base name for output files when prompted (or press Enter for a default name).
