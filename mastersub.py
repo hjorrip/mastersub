@@ -79,9 +79,16 @@ def select_domains(domains):
 
     print("\nPlease select the domains for the next step:")
     choices = []
-    for domain in domains:
+    for domain_info in domains:
+        domain = domain_info['domain']
+        discovered_from = domain_info['discovered_from']
+        # Build display name
+        if discovered_from:
+            display_name = f"{domain} (discovered from {discovered_from})"
+        else:
+            display_name = f"{domain} (initial domain)"
         checked = not domain.endswith('.onmicrosoft.com')
-        choices.append({'name': domain, 'checked': checked})
+        choices.append({'name': display_name, 'value': domain, 'checked': checked})
 
     selected_domains = checkbox(
         "Select domains (use space to toggle selection, up/down to navigate):",
@@ -158,7 +165,9 @@ def main():
 
     api_key = args.apikey.strip()
 
-    all_domains = set()
+    # Initialize a dictionary to hold domain info
+    all_domains = {}
+
     for domain in args.domains:
         print(f"Retrieving tenant domains for {domain}...")
         tenant_domains = get_tenant_domains(domain)
@@ -166,15 +175,26 @@ def main():
             print(f"\nDomains found for {domain}:")
             for d in tenant_domains:
                 print(d)
-            all_domains.update(tenant_domains)
+                if d not in all_domains:
+                    all_domains[d] = {'domain': d, 'discovered_from': domain}
         else:
             print(f"No domains found for {domain}.")
+        # Always add the input domain to all_domains
+        if domain not in all_domains:
+            all_domains[domain] = {'domain': domain, 'discovered_from': None}
+        else:
+            # If domain is already in all_domains, and 'discovered_from' is not None, set it to None
+            if all_domains[domain]['discovered_from'] is not None:
+                all_domains[domain]['discovered_from'] = None
 
     if not all_domains:
         print("No domains to select.")
         sys.exit(0)
 
-    selected_domains = select_domains(sorted(all_domains))
+    # Convert the all_domains dictionary to a list for selection
+    domain_list = list(all_domains.values())
+
+    selected_domains = select_domains(domain_list)
     if not selected_domains:
         print("No domains selected.")
         sys.exit(0)
@@ -187,7 +207,17 @@ def main():
     default_base_filename = selected_domains[0].split('.')[0]
 
     # Ask for base filename/project name with default
-    base_filename = text(f"\nEnter a base name for output files (default: '{default_base_filename}')", default=default_base_filename).ask()
+    from questionary import prompt
+    base_filename_question = [
+        {
+            'type': 'input',
+            'name': 'base_filename',
+            'message': f"\nEnter a base name for output files (default: '{default_base_filename}')",
+            'default': default_base_filename
+        }
+    ]
+    base_filename_answer = prompt(base_filename_question)
+    base_filename = base_filename_answer.get('base_filename', default_base_filename)
     if not base_filename:
         base_filename = default_base_filename
         print(f"No base filename provided. Using default: {base_filename}")
@@ -205,6 +235,10 @@ def main():
         all_subdomains[domain] = full_subdomains
         domain_subdomain_counts.append({'domain': domain, 'subdomain_count': count})
         total_subdomains += count
+
+    if not total_subdomains:
+        print("No subdomains found for the selected domains.")
+        sys.exit(0)
 
     # Save all subdomains to file
     all_subdomains_filename = f"{base_filename}-all.txt"
@@ -261,7 +295,7 @@ def main():
     live_subdomains_set = set(live_subdomains)
     for item in domain_subdomain_counts:
         domain = item['domain']
-        subdomains = all_subdomains[domain]
+        subdomains = all_subdomains.get(domain, [])
         live_count = sum(1 for subdomain in subdomains if subdomain in live_subdomains_set)
         item['live_count'] = live_count
         total_live_subdomains += live_count
@@ -281,4 +315,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
